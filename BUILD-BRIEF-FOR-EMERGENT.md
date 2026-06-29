@@ -268,10 +268,19 @@ must keep it:
   are lees/reductive, so lees-aged whites correctly read unoaked.
 - **Results header** (`revealMeta()`): "N/M spot-on · ⏱ time · Attempt # · date" —
   records `durationSec` + `attempt` per tasting.
-Still open to fully clone NVWA: optional **free-text** aroma entry (they let you type,
-not just pick), **fruit-image icons** on the aroma/flavor picker, and a per-question
-**Help/reference** link. **Amy's chart already conforms to `data/tasting-schema.js`;**
-if her certification level changes, that one file is still the single edit point.
+- **Free-text aroma/flavor entry** (`addCustomNote`): a "…or type your own" input on
+  each multiselect; typed notes are personal and **ungraded** (excluded from scoring
+  precision via `vocabFor()`) and shown as 📝 chips. Replicate this — NVWA lets the
+  taster type, not just pick.
+- **Icon chips** (`NOTE_ICON`): a fruit/aroma emoji on each pick chip (🍑 Stone fruit,
+  🪵 Oak/Vanilla, …). In Emergent, upgrade these to small illustrations like NVWA's.
+- **Per-question Help** (`FIELD_HELP`): a "What am I judging?" disclosure on each field
+  with a plain-language definition + how to judge it.
+Build/caching note: this is a no-build static app, so assets carry a **`?v=N` query**
+in `index.html` (bump with the SW cache version every release) — the network-first SW
+alone still let the browser HTTP cache serve stale JS. **Amy's chart already conforms
+to `data/tasting-schema.js`;** if her certification level changes, that one file is
+still the single edit point.
 
 ## Appendix A — Ready-to-paste Emergent kickoff prompt
 > Build "Wine Tasting Companion," a phone-first PWA + backend. It's a sommelier
