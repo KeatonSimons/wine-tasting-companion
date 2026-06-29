@@ -13,19 +13,19 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Mulish:wght@400;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=17" />
 </head>
 <body>
   <main id="app" class="app"></main>
 
-  <!-- data first, then engine -->
-  <script src="data/tasting-schema.js"></script>
-  <script src="data/rewards.js"></script>
-  <script src="data/palate.js"></script>
-  <script src="data/grapes.js"></script>
-  <script src="data/regions.js"></script>
-  <script src="data/theory.js"></script>
-  <script src="data/wines.js"></script>
-  <script src="app.js"></script>
+  <!-- data first, then engine. ?v bumps on each release to bust caches. -->
+  <script src="data/tasting-schema.js?v=17"></script>
+  <script src="data/rewards.js?v=17"></script>
+  <script src="data/palate.js?v=17"></script>
+  <script src="data/grapes.js?v=17"></script>
+  <script src="data/regions.js?v=17"></script>
+  <script src="data/theory.js?v=17"></script>
+  <script src="data/wines.js?v=17"></script>
+  <script src="app.js?v=17"></script>
 </body>
 </html>

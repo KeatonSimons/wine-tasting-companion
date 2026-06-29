@@ -89,6 +89,48 @@
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const typeEmoji = { red: "🍷", white: "🥂", sparkling: "🍾", rose: "🌸", dessert: "🍯", orange: "🟠" };
   const typeLabel = { red: "red", white: "white", sparkling: "sparkling", rose: "rosé", dessert: "dessert wine", orange: "orange wine" };
+
+  // little fruit/aroma icons on the picker chips (NVWA-style visual cues)
+  const NOTE_ICON = {
+    "Plum": "🟣", "Blackberry": "🫐", "Black cherry": "🍒", "Red cherry": "🍒", "Raspberry": "🫐",
+    "Strawberry": "🍓", "Blackcurrant (Cassis)": "🫐", "Blueberry": "🫐", "Cranberry": "🔴", "Fig": "🟤",
+    "Lemon": "🍋", "Lime": "🍋", "Grapefruit": "🍊", "Green apple": "🍏", "Ripe apple": "🍎", "Pear": "🍐",
+    "Quince": "🍐", "Peach": "🍑", "Apricot": "🍑", "Nectarine": "🍑", "Pineapple": "🍍", "Mango": "🥭",
+    "Passionfruit": "🥭", "Melon": "🍈", "Lychee": "🤍",
+    "Vanilla": "🍦", "Oak/Cedar": "🪵", "Tobacco": "🍂", "Leather": "🟤", "Dark chocolate": "🍫",
+    "Mocha/Coffee": "☕", "Wet stone/Mineral": "🪨", "Flint": "🪨", "Earth/Forest floor": "🍄",
+    "Mushroom": "🍄", "Smoke": "💨", "Toast/Brioche": "🍞", "Almond": "🌰",
+    "Black pepper": "🌶️", "White pepper": "🌶️", "Cinnamon": "🟫", "Clove": "🟤", "Baking spice": "🟤",
+    "Licorice": "⚫", "Dried herbs": "🌿", "Eucalyptus": "🌿",
+    "Violet": "🟣", "Rose": "🌹", "Honey": "🍯", "Butter": "🧈", "Fresh grass": "🌱", "Bell pepper": "🫑",
+    "Red fruit": "🍒", "Black fruit": "🫐", "Citrus": "🍋", "Stone fruit": "🍑", "Tropical fruit": "🍍",
+    "Floral": "🌸", "Herbal/Green": "🌿", "Spice": "🌶️", "Oak/Vanilla": "🪵", "Earth/Mineral": "🪨",
+    "Butter/Cream": "🧈", "Dried fruit": "🍇", "Nutty": "🌰",
+  };
+
+  // per-question "Help" reference (NVWA puts a Help link on each step)
+  const FIELD_HELP = {
+    appearanceColor: "Tilt the glass over something white. Whites run lemon → gold → amber with age; reds run purple → ruby → garnet → brick.",
+    appearanceIntensity: "How much color is there? Pale = thin-skinned grape or cool climate; deep = thick skins, ripeness, or warmth.",
+    noseIntensity: "How strong is the smell before you sip? Light = subtle or closed; pronounced = aromatic grape, oak, or development.",
+    aromaCategories: "Group what you smell into families first — fruit, floral, herbal, oak, earth — before naming specifics.",
+    body: "How heavy does it feel — skim milk (light) vs. cream (full)? Driven by alcohol, ripeness, and oak.",
+    acidity: "The mouth-watering tartness. Low = soft and round; high = makes you salivate (a cool-climate tell).",
+    tannin: "The drying, grippy feel on your gums, from grape skins and oak. Really a red-wine thing.",
+    sweetness: "Is there sugar? Most wine is bone dry; sweetness means off-dry, late-harvest, or fortified.",
+    flavorNotes: "Now name specifics on the palate — pick what you actually taste, and type your own if it's not listed.",
+    finish: "Count the seconds the flavor lingers after you swallow. Longer generally means higher quality.",
+    grapeGuess: "Put structure + aromas together: tannic + cassis ≈ Cabernet; high-acid + tart red fruit ≈ Pinot Noir.",
+    countryGuess: "Old World (Europe) leans earthy, restrained, higher-acid; New World leans riper, bolder, fruit-forward.",
+    regionGuess: "The hardest call — narrow by climate, then grape, before committing to an appellation.",
+    ageGuess: "Age shows as the color browning and savory tertiary notes (dried fruit, leather, mushroom).",
+    climateGuess: "Cool = high acid, lower alcohol, tart/green fruit. Warm = soft acid, high alcohol, ripe/jammy fruit.",
+  };
+
+  // the controlled vocabulary for a multiselect field (so free-text customs are detectable)
+  function vocabFor(field) {
+    return field.options ? field.options : (field.groups ? field.groups.flatMap((g) => g.notes) : []);
+  }
   const wineById = (id) => DATA.wines.find((w) => w.id === id);
   const restById = (id) => DATA.restaurants.find((r) => r.id === id);
   const winesForRest = (id) => DATA.wines.filter((w) => (w.restaurantIds || []).includes(id));
@@ -184,7 +226,11 @@
 
         if (field.type === "multiselect") {
           const actual = wine[field.key] || [];
-          const guessed = Array.isArray(g) ? g : [];
+          const allGuessed = Array.isArray(g) ? g : [];
+          // free-text notes the user typed (not in our vocab) are personal & ungraded
+          const vocab = vocabFor(field);
+          const customs = allGuessed.filter((x) => !vocab.includes(x) && !actual.includes(x));
+          const guessed = allGuessed.filter((x) => !customs.includes(x));
           const matched = guessed.filter((x) => actual.includes(x));
           const missed = actual.filter((x) => !guessed.includes(x));
           let wrong = guessed.filter((x) => !actual.includes(x));
@@ -210,7 +256,8 @@
 
           fieldRecall[field.key] = actual.length ? credited / actual.length : 0;
           d.matched = matched; d.missed = missed; d.wrong = wrong; d.near = near;
-          d.skipped = guessed.length === 0;
+          d.custom = customs;
+          d.skipped = guessed.length === 0 && customs.length === 0;
           const stillMissed = missed.filter((m) => !near.some((n) => n.actual === m));
           if (stillMissed.length && field.key === "flavorNotes") {
             d.callout = "Actually — there was " + stillMissed.slice(0, 2).join(" and ") + " in there.";
@@ -670,23 +717,40 @@
           choiceChip(field.key, n, sel.includes(n), true)).join("")}</div>`;
         hint = `Pick a few${field.suggested ? ` (≈${field.suggested})` : ""} — or skip if nothing stands out.`;
       }
+      const vocab = vocabFor(field);
+      const customs = sel.filter((x) => !vocab.includes(x));
+      const customHtml = customs.length
+        ? `<div class="choices custom-row">${customs.map((x) =>
+            `<button class="choice multi selected custom" data-choice="${esc(field.key)}" data-val="${esc(x)}" data-multi="1"><span class="chip-ic">📝</span> ${esc(x)}</button>`).join("")}</div>`
+        : "";
+      const freetext = `<div class="freetext-row">
+        <input class="freetext" type="text" data-freetext="${esc(field.key)}" placeholder="…or type your own — press enter" autocomplete="off" autocapitalize="words"/>
+      </div>`;
       return `<div class="field">
         <div class="field-prompt">${esc(field.prompt)}</div>
         <div class="field-hint">${hint}</div>
-        ${body}${toggle}
+        ${helpBlock(field.key)}
+        ${body}${toggle}${customHtml}${freetext}
       </div>`;
     }
     const opts = optionsFor(field, wine);
     return `<div class="field">
       <div class="field-prompt">${esc(field.prompt)}</div>
+      ${helpBlock(field.key)}
       <div class="choices">${opts.map((o) => choiceChip(field.key, o, g === o, false)).join("")}</div>
       <div class="skip-line"><button class="link-btn" data-skip="${field.key}">I didn't catch this</button></div>
     </div>`;
   }
+  function helpBlock(key) {
+    return FIELD_HELP[key]
+      ? `<details class="field-help"><summary>ⓘ What am I judging?</summary><div>${esc(FIELD_HELP[key])}</div></details>`
+      : "";
+  }
 
   function choiceChip(key, val, selected, multi) {
+    const ic = multi && NOTE_ICON[val] ? `<span class="chip-ic">${NOTE_ICON[val]}</span> ` : "";
     return `<button class="choice ${multi ? "multi" : ""} ${selected ? "selected" : ""}"
-      data-choice="${esc(key)}" data-val="${esc(val)}" data-multi="${multi ? 1 : 0}">${esc(val)}</button>`;
+      data-choice="${esc(key)}" data-val="${esc(val)}" data-multi="${multi ? 1 : 0}">${ic}${esc(val)}</button>`;
   }
 
   // ---- reveal ----
@@ -994,7 +1058,8 @@
       const stillMissed = (d.missed || []).filter((m) => !(d.near || []).some((n) => n.actual === m));
       const missed = stillMissed.map((x) => `<span class="tag missed">+ ${esc(x)}</span>`).join("");
       const wrong = (d.wrong || []).map((x) => `<span class="tag wrong">${esc(x)}</span>`).join("");
-      body = `<div style="margin-top:6px">${hit}${near}${missed}${wrong}</div>` +
+      const custom = (d.custom || []).map((x) => `<span class="tag custom">📝 ${esc(x)}</span>`).join("");
+      body = `<div style="margin-top:6px">${hit}${near}${missed}${wrong}${custom}</div>` +
         (d.callout ? `<div class="rf-callout">${esc(d.callout)}</div>` : "");
       if (d.skipped) body = `<div class="rf-line">You skipped this — the answer was: ${(d.missed || []).map((x) => `<span class="tag missed">${esc(x)}</span>`).join("")}</div>`;
     } else {
@@ -1775,6 +1840,16 @@
       });
       const tg = r.querySelector("[data-act='toggle-notes']");
       if (tg) tg.onclick = () => { state.showAllNotes = !state.showAllNotes; render(); };
+      r.querySelectorAll("[data-freetext]").forEach((inp) => {
+        inp.onkeydown = (e) => {
+          if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addCustomNote(inp.dataset.freetext, inp.value); inp.value = ""; }
+        };
+      });
+      if (state._ftFocus) {
+        const el = r.querySelector('[data-freetext="' + cssEscape(state._ftFocus) + '"]');
+        state._ftFocus = null;
+        if (el) el.focus();
+      }
       const next = r.querySelector("[data-act='next']");
       if (next) next.onclick = onNext;
     }
@@ -1920,6 +1995,18 @@
     persistProgress();
   }
   function cssEscape(s) { return String(s).replace(/"/g, '\\"'); }
+
+  // add a typed (free-text) aroma/flavor note — personal & ungraded
+  function addCustomNote(key, raw) {
+    const val = String(raw || "").trim().replace(/[;,]+$/, "").replace(/\s+/g, " ");
+    if (!val) return;
+    const cur = Array.isArray(state.guesses[key]) ? state.guesses[key].slice() : [];
+    if (!cur.some((x) => x.toLowerCase() === val.toLowerCase())) {
+      cur.push(val); state.guesses[key] = cur; persistProgress();
+    }
+    state._ftFocus = key;
+    render();
+  }
 
   function onNext() {
     const wine = wineById(state.wineId);

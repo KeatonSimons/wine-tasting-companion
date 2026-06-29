@@ -416,6 +416,33 @@ h2.section-title {
 }
 .reveal-meta b { color: var(--ink-soft); }
 
+/* ---------- field help, free-text & icon chips (NVWA-style) ---------- */
+.choice .chip-ic { font-size: 0.95em; margin-right: 1px; }
+.field-help { margin: -2px 0 12px; }
+.field-help summary {
+  list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+  font-size: 0.76rem; font-weight: 700; color: var(--brass);
+  background: rgba(169,128,47,0.08); border: 1px solid var(--paper-edge);
+  border-radius: 999px; padding: 4px 11px; -webkit-tap-highlight-color: transparent;
+}
+.field-help summary::-webkit-details-marker { display: none; }
+.field-help[open] summary { background: rgba(169,128,47,0.16); }
+.field-help > div {
+  margin-top: 8px; font-size: 0.82rem; line-height: 1.5; color: var(--ink-soft);
+  border-left: 2px solid var(--brass-soft); padding: 4px 0 4px 10px;
+}
+.custom-row { margin-top: 8px; }
+.choice.custom { border-style: dashed; }
+.freetext-row { margin-top: 10px; }
+input.freetext {
+  width: 100%; box-sizing: border-box; font-family: inherit; font-size: 0.9rem;
+  color: var(--ink); background: rgba(255,255,255,0.5);
+  border: 1px solid var(--paper-edge); border-radius: 12px; padding: 11px 13px;
+}
+input.freetext::placeholder { color: var(--ink-mute); }
+input.freetext:focus { outline: none; border-color: var(--brass); background: #fff; }
+.tag.custom { background: rgba(169,128,47,0.14); color: var(--ink-soft); border: 1px dashed var(--brass-soft); }
+
 /* ---------- rewards screen ---------- */
 .ladder { display: flex; flex-direction: column; gap: 10px; }
 .ladder .rung {
