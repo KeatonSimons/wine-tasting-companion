@@ -1,5 +1,5 @@
 /* Wine Tasting Companion — offline cache (network-first so updates show) */
-const CACHE = "wtc-v14";
+const CACHE = "wtc-v16";
 const ASSETS = [
   "./",
   "./index.html",

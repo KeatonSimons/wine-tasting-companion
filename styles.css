@@ -405,6 +405,16 @@ h2.section-title {
 .tag.wrong { background: rgba(168,84,63,0.18); color: #9a4a36; text-decoration: line-through; }
 .tag.you { background: rgba(58,42,28,0.09); color: var(--ink-soft); }
 .rf-callout { margin-top: 6px; font-size: 0.86rem; color: var(--wine); font-style: italic; }
+.rf-coach {
+  margin-top: 7px; font-size: 0.8rem; line-height: 1.45; font-style: italic;
+  color: var(--ink-soft); border-left: 2px solid var(--brass-soft);
+  padding: 2px 0 2px 9px; background: rgba(169,128,47,0.05);
+}
+.reveal-meta {
+  margin-top: 12px; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.01em;
+  color: var(--ink-mute);
+}
+.reveal-meta b { color: var(--ink-soft); }
 
 /* ---------- rewards screen ---------- */
 .ladder { display: flex; flex-direction: column; gap: 10px; }

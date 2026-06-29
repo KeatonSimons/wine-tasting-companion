@@ -584,6 +584,7 @@
     state.stepIndex = 0;
     state.guesses = {};
     state.showAllNotes = false;
+    state.tasteStart = Date.now();
     persistProgress();
     go("tasting");
   }
@@ -695,6 +696,8 @@
     const award = REWARDS.awardFor(score.totalPct);
     const ribbons = REWARDS.ribbonsFor(score);
     const rest = restById(state.restaurantId);
+    const attempt = loadHistory().filter((r) => r.wine && r.wine.id === wine.id).length + 1;
+    const durationSec = state.tasteStart ? Math.round((Date.now() - state.tasteStart) / 1000) : null;
     const rec = {
       id: "t" + (loadHistory().length + 1) + "_" + wine.id + "_" + score.totalPct + "_" + Math.floor(performance.now()),
       dateISO: new Date().toISOString(),
@@ -705,6 +708,8 @@
       guesses: state.guesses,
       score,
       totalPct: score.totalPct,
+      attempt,
+      durationSec,
       award: { name: award.name, icon: award.icon, line: award.line },
       ribbons: ribbons.map((r) => ({ name: r.name, icon: r.icon })),
       notes: "",
@@ -738,7 +743,7 @@
     SCHEMA.sections.forEach((s) => sectionTitle[s.key] = s.title);
 
     const detailHtml = Object.keys(bySection).map((secKey) => {
-      const rows = bySection[secKey].map(revealField).join("");
+      const rows = bySection[secKey].map((d) => revealField(d, wine)).join("");
       const secPct = rec.score.sectionPct[secKey];
       return `<div class="card" style="margin-top:12px">
         <div style="display:flex;justify-content:space-between;align-items:baseline">
@@ -776,6 +781,7 @@
     const isStudy = rec.mode === "study";
     const inExam = fresh && state.exam;
     const deductionHtml = isStudy ? deductionCard(rec) : "";
+    const senseHtml = senseDeductions(rec);
     const head = fresh ? `<div class="topbar"><h1>${isStudy ? "Unveiled" : "The reveal"}</h1></div>` : topbar("Tasting", rec.restaurantName || "");
     const footer = inExam
       ? (state.exam.idx < state.exam.wineIds.length - 1
@@ -800,10 +806,12 @@
           <div class="award-line">${esc(award.line)}</div>
         </div>
         ${ribbons ? `<div class="ribbons">${ribbons}</div>` : ""}
+        ${revealMeta(rec)}
         ${wine.blurb ? `<p class="muted" style="margin:14px 0 0;font-size:.88rem;font-style:italic">"${esc(wine.blurb)}"</p>` : ""}
         ${srcHtml}
       </div>
       ${deductionHtml}
+      ${senseHtml}
       ${detailHtml}
       ${notesBlock}
       <div class="spacer"></div>
@@ -812,7 +820,172 @@
     `;
   }
 
-  function revealField(d) {
+  // ---- coaching feedback (NVWA-style "here's the why") ----
+  function grapeCard(wine) {
+    const g = (wine.grapes || [])[0]; if (!g) return null;
+    const first = g.toLowerCase().split(/[ /]/)[0];
+    return GRAPES.find((c) => {
+      const cg = c.grape.toLowerCase();
+      return cg.includes(first) || first.includes(cg.split(/[ /]/)[0]);
+    }) || null;
+  }
+  function regionCard(wine) {
+    if (!wine.region) return null;
+    return REGIONS.find((c) => fuzzyContains(c.region, wine.region) || fuzzyContains(wine.region, c.region)) || null;
+  }
+  // a short, true coaching sentence for one tasting field
+  function coachFor(d, wine) {
+    const a = d.actual;
+    const low = (x) => String(x == null ? "" : x).toLowerCase();
+    switch (d.key) {
+      case "appearanceColor": {
+        const t = typeLabel[wine.type] || wine.type;
+        let why;
+        if (wine.type === "white") why = /amber|gold/i.test(a) ? "a golden, deeper hue hints at oak or some age" : "a pale lemon tint reads young and fresh";
+        else if (wine.type === "red") why = /tawny|brick|garnet/i.test(a) ? "garnet-to-brick edges show bottle age" : "a vivid purple-ruby reads youthful";
+        else if (wine.type === "rose") why = "the pink intensity hints at the grape and how long it kissed the skins";
+        else why = "the hue places its style";
+        return `That ${low(a)} color tells you it's a ${t} — ${why}.`;
+      }
+      case "appearanceIntensity":
+        return a === "Deep" ? "Deep color points to a thick-skinned grape or a ripe, warm-climate vintage."
+          : a === "Pale" ? "Pale color suggests a delicate, thin-skinned grape or a cool climate."
+          : "Medium intensity is the broad middle — lean on the nose and palate to narrow it.";
+      case "noseIntensity":
+        return a === "Pronounced" ? "A pronounced nose suggests an aromatic grape, oak, or bottle development."
+          : a === "Light" ? "A quiet nose leans subtle, youthful, or simply closed — give it some air."
+          : "Medium aroma intensity is typical — which families you find matters more than the volume.";
+      case "aromaCategories":
+      case "flavorNotes": {
+        const gc = grapeCard(wine);
+        return gc && gc.tell ? `Aromas are your biggest clue to the grape. ${gc.grape}: ${gc.tell}`
+          : "The aroma & flavor families are your strongest bridge to the grape — group them before you guess.";
+      }
+      case "body":
+        return a === "Full" ? "Full body comes from higher alcohol, riper fruit, or oak — often a bold grape or warm climate."
+          : a === "Light" ? "Light body leans cool-climate and delicate (think Pinot Noir or a crisp white)."
+          : "Medium body is the versatile middle.";
+      case "acidity":
+        return a === "High" ? "High, mouth-watering acidity is a cool-climate fingerprint."
+          : a === "Low" ? "Low acidity points to warmth and ripeness."
+          : "Medium acidity is common — weigh it together with the fruit character.";
+      case "tannin":
+        return (a === "High" || a === "Medium") ? "That drying grip is tannin — a red-grape signature, firmest in thick-skinned grapes (Cabernet, Nebbiolo) and in youth or oak."
+          : "Little to no tannin means a white, a rosé, or a light low-tannin red like Gamay.";
+      case "sweetness":
+        return a === "Dry" ? "Bone dry — like most table wine. Real sweetness would point to late-harvest or fortified styles."
+          : "Residual sugar like this points to off-dry or dessert styles.";
+      case "finish":
+        return a === "Long" ? "A long, lingering finish is a hallmark of quality and concentration."
+          : a === "Short" ? "A short finish suggests a simpler, everyday wine."
+          : "A medium finish is solid and typical.";
+      case "grapeGuess": {
+        const gc = grapeCard(wine);
+        return gc && gc.tell ? `The giveaway for ${gc.grape}: ${gc.tell}` : "Anchor the grape to its structure plus its signature aromas.";
+      }
+      case "countryGuess":
+        return "Country comes from the whole picture — climate cues, grape, and style — not any single clue.";
+      case "regionGuess": {
+        const rc = regionCard(wine);
+        return rc && rc.tell ? `${rc.region}: ${rc.tell}` : (rc && rc.fact ? `${rc.region} — ${rc.fact}` : "Region is the hardest call — let climate and grape narrow it before you commit.");
+      }
+      case "climateGuess":
+        return `${a} climate — read it from acidity (high = cool), alcohol/body (high = warm), and fruit (tart/green = cool, ripe/jammy = warm).`;
+      case "ageGuess":
+        return `Age shows in color (browning) and tertiary notes (dried fruit, leather, mushroom). This one reads ${low(a)}.`;
+      default: return "";
+    }
+  }
+
+  // ---- deduction-chaining: observation → inference → verdict (NVWA's core move) ----
+  // unambiguous oak/barrel markers only (Almond, Smoke = lees/reductive, not oak)
+  const OAK_FLAVORS = ["Vanilla", "Oak/Cedar", "Toast/Brioche", "Mocha/Coffee", "Dark chocolate"];
+  function adjacentClimate(x, y) { const o = ["Cool", "Moderate", "Warm"]; return Math.abs(o.indexOf(x) - o.indexOf(y)) === 1; }
+  function climateWhy(c) {
+    return c === "Cool" ? "high acid, lower alcohol, tart/green fruit."
+      : c === "Warm" ? "lower acid, higher alcohol, ripe/jammy fruit."
+      : "a balanced middle — moderate acid and ripeness.";
+  }
+  function senseDeductions(rec) {
+    const wine = rec.wine, g = rec.guesses || {};
+    const chains = [];
+
+    // 1) Oak / maturation — the signature deductive question
+    const userOakNotes = (g.aromaCategories || []).filter((x) => x === "Oak/Vanilla")
+      .concat((g.flavorNotes || []).filter((x) => OAK_FLAVORS.includes(x)));
+    const wineOaked = (wine.aromaCategories || []).includes("Oak/Vanilla") ||
+      (wine.flavorNotes || []).some((n) => OAK_FLAVORS.includes(n));
+    const userSawOak = userOakNotes.length > 0;
+    chains.push({
+      obs: userSawOak ? "you noted " + userOakNotes.slice(0, 2).join(" & ") : "you flagged no oak notes",
+      inf: userSawOak ? "it was matured in oak" : "no oak — an inert vessel",
+      correct: userSawOak === wineOaked,
+      truth: wineOaked ? "Oak-aged — vanilla, toast & baking spice are the tells."
+        : "Unoaked — made in steel/inert vessel to keep the fruit pure.",
+    });
+
+    // 2) Climate from the structure you felt
+    if (g.acidity || g.body) {
+      let sc = 0;
+      if (g.acidity === "High") sc--; else if (g.acidity === "Low") sc++;
+      if (g.body === "Light") sc--; else if (g.body === "Full") sc++;
+      const inf = sc < 0 ? "Cool" : sc > 0 ? "Warm" : "Moderate";
+      const truth = climateFor(wine);
+      const obsBits = [g.acidity ? g.acidity.toLowerCase() + " acidity" : null,
+        g.body ? g.body.toLowerCase() + " body" : null].filter(Boolean).join(" + ");
+      chains.push({
+        obs: "you felt " + obsBits,
+        inf: inf + " climate",
+        correct: inf === truth ? true : (adjacentClimate(inf, truth) ? "near" : false),
+        truth: truth + " climate — " + climateWhy(truth),
+      });
+    }
+
+    // 3) Age from the color you saw
+    if (wine.vintage && g.appearanceColor) {
+      const col = g.appearanceColor;
+      const dev = wine.type === "white" ? /gold|amber/i.test(col) : /garnet|tawny|brick/i.test(col);
+      const bracket = ageBracket(wine.vintage);
+      const truthDev = !/Youthful/.test(bracket) && bracket !== "Non-vintage";
+      chains.push({
+        obs: "the " + col.toLowerCase() + " color",
+        inf: dev ? "some bottle age" : "a youthful wine",
+        correct: bracket === "Non-vintage" ? "near" : dev === truthDev,
+        truth: bracket === "Non-vintage" ? "Non-vintage blend." : bracket + ".",
+      });
+    }
+
+    if (!chains.length) return "";
+    const rows = chains.map((c) => {
+      const ok = c.correct === true, near = c.correct === "near";
+      const mark = ok ? "✓" : near ? "≈" : "✗", cls = ok ? "good" : near ? "partial" : "miss";
+      return `<div class="reveal-field">
+        <div class="rf-top"><div class="rf-label">Because ${esc(c.obs)}…</div><div class="rf-score ${cls}">${mark}</div></div>
+        <div class="rf-line">→ you'd deduce <span class="tag you">${esc(c.inf)}</span></div>
+        <div class="rf-coach">💡 ${esc(c.truth)}</div>
+      </div>`;
+    }).join("");
+    return `<div class="card" style="margin-top:12px;border-color:var(--brass)">
+      <div class="eyebrow">🔍 Connect the dots — your deductions</div>
+      <p class="muted" style="font-size:.82rem;margin:6px 0 2px">How a sommelier reasons from what the senses pick up to a conclusion.</p>
+      ${rows}
+    </div>`;
+  }
+
+  // results header: spot-on count · time · attempt# · date (NVWA-style)
+  function fmtClock(sec) { const m = Math.floor(sec / 60), s = sec % 60; return m + ":" + String(s).padStart(2, "0"); }
+  function revealMeta(rec) {
+    const detail = rec.score.detail || [];
+    const nailed = detail.filter((d) => d.pct >= 100).length;
+    const bits = [`<b>${nailed}/${detail.length}</b> spot-on`];
+    if (rec.durationSec != null) bits.push("⏱ " + fmtClock(rec.durationSec));
+    if (rec.attempt) bits.push("Attempt #" + rec.attempt);
+    const dt = new Date(rec.dateISO);
+    bits.push(dt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }));
+    return `<div class="reveal-meta muted">${bits.join(" · ")}</div>`;
+  }
+
+  function revealField(d, wine) {
     const cls = d.pct >= 100 ? "good" : d.pct > 0 ? "partial" : "miss";
     let body = "";
     if (d.type === "multiselect") {
@@ -830,12 +1003,14 @@
       const right = d.pct >= 100;
       body = `<div class="rf-line">You: <span class="tag you">${your}</span> ${right ? "✓" : "→ Actual:"} ${right ? "" : `<span class="tag hit">${actual}</span>`}</div>`;
     }
+    const coach = wine ? coachFor(d, wine) : "";
     return `<div class="reveal-field">
       <div class="rf-top">
         <div class="rf-label">${esc(d.label)}</div>
         <div class="rf-score ${cls}">${d.pct >= 100 ? "Nailed it" : d.pct > 0 ? "Close" : "Missed"}</div>
       </div>
       ${body}
+      ${coach ? `<div class="rf-coach">💡 ${esc(coach)}</div>` : ""}
     </div>`;
   }
 
@@ -1194,6 +1369,7 @@
     state.wineId = id;
     state.restaurantId = (w.restaurantIds || [])[0] || null;
     state.stepIndex = 0; state.guesses = {}; state.showAllNotes = false;
+    state.tasteStart = Date.now();
     state.exam.deadline = Date.now() + state.exam.mins * 60 * 1000;
     clearProgress();
     go("tasting");
@@ -1223,6 +1399,8 @@
       dateISO: new Date().toISOString(), mode: "study", exam: true,
       restaurantId: state.restaurantId, restaurantName: rest ? rest.name : "",
       wine: JSON.parse(JSON.stringify(wine)), guesses: state.guesses, score, totalPct: score.totalPct,
+      attempt: loadHistory().filter((r) => r.wine && r.wine.id === wine.id).length + 1,
+      durationSec: state.tasteStart ? Math.round((Date.now() - state.tasteStart) / 1000) : null,
       award: { name: award.name, icon: award.icon, line: award.line },
       ribbons: ribbons.map((r) => ({ name: r.name, icon: r.icon })), notes: "",
     };
@@ -1570,7 +1748,7 @@
         state.mode = prog.mode || "solo";
         state.wineId = prog.wineId; state.restaurantId = prog.restaurantId;
         state.stepIndex = prog.stepIndex || 0; state.guesses = prog.guesses || {};
-        state.showAllNotes = false; go("tasting");
+        state.showAllNotes = false; state.tasteStart = Date.now(); go("tasting");
       };
       const disc = r.querySelector("[data-act='discard-progress']");
       if (disc) disc.onclick = () => { clearProgress(); render(); };
