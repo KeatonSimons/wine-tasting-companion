@@ -241,12 +241,37 @@ production, service, fortifieds, sake, faults) — all in one shared engine (a
 Grapes/Regions/Theory toggle) with **spaced repetition across all three** (one
 unified "Review · N due"). The wine library was also expanded to **37 bottles**
 (see §3) so blind practice/exam cover the examinable grapes.
-Still roadmap: the CMS **4-step structure scale** (Low–Med− / Med / Med+ / High —
-holding for Amy's actual chart), a **WSET SAT mode** (quality + ageing verdict), a
-**calibration / benchmark mode**, and **proper geographic maps** (best added in the
-Emergent build with licensed map assets — until then the geography lives in the
-region cards). **Amy's real practice tasting chart drops into
-`data/tasting-schema.js`** and the whole deductive flow conforms to it.
+Still roadmap: a **WSET SAT mode** (quality + ageing verdict), a **calibration /
+benchmark mode**, and **proper geographic maps** (best added in the Emergent build
+with licensed map assets — until then the geography lives in the region cards).
+
+## 16. NVWA-style tasting feedback (Amy's real test — match this)
+Amy's actual practice exam is the **Napa Valley Wine Academy deductive-tasting quiz**
+(`learn.napavalleywineacademy.com`): a 10-question guided sensory walkthrough that
+ends in a **scored feedback screen** — per-question (your answer vs. the correct one)
+plus a coaching sentence, and a header of Correct X/8 · Time · Date · Attempt#. Two
+findings locked the design: (a) it uses a simple **Low / Medium / High** structure
+scale — so the prototype's 3-step scale is correct; **do NOT switch to a CMS 4-step
+scale**; (b) it teaches **deductive chaining** (e.g. "you noted vanilla/toast → was
+this oak or an inert vessel?"). The prototype now mirrors this and the Emergent build
+must keep it:
+- **Per-field coaching feedback** (`coachFor()`): under every reveal field, a short,
+  TRUE "here's the why" line (e.g. "That golden color tells you it's a white — a
+  deeper hue hints at oak or age"). Grape/region tells come from `data/grapes.js` /
+  `data/regions.js`; never fabricate wine-specific facts.
+- **Deduction-chaining** (`senseDeductions()`): on every reveal, observation →
+  inference → verdict → truth chains, color-coded ✓/≈/✗: **oak/maturation** (did the
+  taster's oak notes imply barrel vs. inert vessel? — the NVWA signature question),
+  **climate from structure** (acidity + body → Cool/Moderate/Warm vs. the wine's real
+  climate), **age from color**. Oak markers are the unambiguous set (Vanilla,
+  Oak/Cedar, Toast/Brioche, Mocha/Coffee, Dark chocolate) — NOT Almond/Smoke, which
+  are lees/reductive, so lees-aged whites correctly read unoaked.
+- **Results header** (`revealMeta()`): "N/M spot-on · ⏱ time · Attempt # · date" —
+  records `durationSec` + `attempt` per tasting.
+Still open to fully clone NVWA: optional **free-text** aroma entry (they let you type,
+not just pick), **fruit-image icons** on the aroma/flavor picker, and a per-question
+**Help/reference** link. **Amy's chart already conforms to `data/tasting-schema.js`;**
+if her certification level changes, that one file is still the single edit point.
 
 ## Appendix A — Ready-to-paste Emergent kickoff prompt
 > Build "Wine Tasting Companion," a phone-first PWA + backend. It's a sommelier
