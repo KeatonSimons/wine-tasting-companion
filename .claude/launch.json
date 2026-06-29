@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "wine-tasting",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8799", "--directory", "/Users/keatonhillsimonsgmail.com/Projects/wine-tasting-companion"],
+      "port": 8799
+    }
+  ]
+}
