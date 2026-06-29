@@ -282,20 +282,63 @@ alone still let the browser HTTP cache serve stale JS. **Amy's chart already con
 to `data/tasting-schema.js`;** if her certification level changes, that one file is
 still the single edit point.
 
-## Appendix A — Ready-to-paste Emergent kickoff prompt
-> Build "Wine Tasting Companion," a phone-first PWA + backend. It's a sommelier
-> tasting GAME: a user picks a restaurant, taps the wine they ordered, plays a
-> guided tasting (mark appearance/nose/palate/conclusions), then gets scored
-> against the wine's real published profile with a fun reveal, awards, levels, a
-> saved "cellar" with personal notes, and a shareable scorecard. Use real,
-> source-cited wine data only (no fakes). The tasting questionnaire must be
-> DATA-DRIVEN from a config object so it can be swapped for a sommelier's exact
-> chart without code changes. Match the provided reference prototype's look
-> (Luminous Reef: bordeaux + gold, Cormorant + Mulish, candlelit, calm), flow,
-> scoring rules, and rewards exactly. Stack: React frontend + FastAPI + MongoDB +
-> auth. Import the provided seed data (3 Nashville restaurants, 19 wines).
-> Phase 1 = solo. Architect for a Phase 2 live group mode (join-by-code realtime)
-> but don't build it yet. Free, no paywall.
+## Appendix A — Ready-to-paste Emergent kickoff prompt (FINAL)
+> Build a production, phone-first **PWA + backend** called **Wine Tasting Companion** —
+> a sommelier-style wine TASTING GAME that doubles as a serious blind-tasting study tool.
+>
+> **Start from a complete, working reference implementation** (vanilla-JS PWA, fully
+> built and live — do NOT reinvent the UX):
+> • Live app: https://keatonsimons.github.io/wine-tasting-companion/
+> • Source (public repo): https://github.com/KeatonSimons/wine-tasting-companion
+> • Read `BUILD-BRIEF-FOR-EMERGENT.md` in that repo for the full spec, scoring rules,
+>   data model, and design system. Mirror the prototype's flow, scoring, rewards, study
+>   mode, and "Charcuterie Board" skin **exactly**; rebuild it as a production app.
+>
+> **Preserve all of the core experience:** pick a restaurant → tap the wine you ordered →
+> guided tasting (Appearance→Nose→Palate→Conclusions) generated from a single
+> **DATA-DRIVEN config** (`data/tasting-schema.js`) so the whole questionnaire can be
+> swapped for a sommelier's exact chart with zero code changes — keep this architecture.
+> Scored reveal with forgiving/partial-credit scoring (match `scoreTasting()` exactly:
+> ordinal adjacency, multiselect recall/precision, near-miss flavor-family credit, fuzzy
+> grape/region matching), **per-answer coaching feedback**, a **"Connect the dots"
+> deduction-chaining** card (observation→inference→verdict: oak/maturation,
+> climate-from-structure, age-from-color), and a results header (spot-on · time ·
+> attempt#). Rewards (levels/awards/ribbons/badges, match `data/rewards.js`). A saved
+> **Cellar** with notes, **bottle-photo capture**, and **voice-memo capture w/ live
+> transcription**. Shareable scorecard image. **Sommelier study mode:** blind "mystery
+> pour" deductive tasting (grape/country/region/climate/age via the CMS examinable grape
+> list), three **flashcard decks** (grapes/regions/theory) with **spaced repetition**
+> (Leitner), a **weakness drill**, and a **timed exam simulation** (difficulty tiers,
+> per-wine countdown, flight report). NVWA-style touches: **free-text** aroma entry
+> (ungraded personal notes), **icon chips**, per-question **"What am I judging?" help**,
+> Low/Medium/High structure scale.
+>
+> **Data integrity is non-negotiable:** real, source-cited wines ONLY (each carries a
+> source URL); never fabricate a wine or profile; fail loud if data is missing. Import
+> the seed dataset from the repo (**37 wines**: 19 across 3 Nashville restaurants + 18
+> benchmark study bottles; see `data/wines.js`).
+>
+> **Add for production (the reason we're moving to Emergent):**
+> 1. **Backend + accounts** (email / passwordless auth) with a cloud-synced Cellar,
+>    palate profile, and spaced-repetition schedule **across devices**.
+> 2. **Live GROUP mode** (now in scope): join a table by code, everyone tastes the same
+>    bottle, real-time shared reveal + table leaderboard.
+> 3. **Wine-list ingestion / admin**: add restaurants + wines beyond the seed (keep
+>    source URLs + an "on-list verified" flag) so the catalog scales past 3 venues.
+> 4. **Real geographic region maps** (licensed/embeddable) on region cards + flashcards.
+> 5. **Freemium model**: generous free / invite tier, then a light, fairly-priced
+>    subscription for the study suite (exam sim, unlimited decks, cloud sync) — no
+>    gouging, ship-then-monetize.
+>
+> **Design:** the "Charcuterie Board" skin — weathered walnut board, aged-parchment
+> "wine label" cards (espresso ink on cream), brass + bordeaux accents, Cormorant +
+> Mulish; calm, tactile, artisanal. It lives entirely in `styles.css` as a swappable
+> skin over the engine — keep that separation.
+>
+> **Stack:** your call (e.g. React + FastAPI + Mongo, or React + Supabase for realtime).
+> Keep it an installable, offline-capable PWA; keep the tasting config-driven; keep the
+> whole codebase exportable and owned by us. Deliver Phase 1 (everything except group
+> mode) first, then group mode.
 
 ## Appendix B — Files in the reference prototype
 ```
