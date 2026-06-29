@@ -141,20 +141,28 @@ an exam.
 The whole UI is a re-skinnable layer (all visual treatment lives in `styles.css`;
 the engine/markup never changes). **Keep this engine-vs-skin separation** so the
 look can be re-themed per market/partner. The current skin:
-- **The board (background):** a weathered dark **walnut board** — a *stylized*
-  CSS plank grain (this read truer to the eye than a photo texture in testing),
-  under a soft candle vignette. Wood tones `#1e130a`→`#4d3622`.
-- **Cards = aged-parchment "wine label" slips** on a **photoreal aged-paper
-  texture**: cream `#f4e8cd`/`#ecdcb6`, edge `#cdb583`, with a faint inner frame
-  line like a real label. **Espresso-ink text** (`#3a2a1c`/`#5f4630`/`#8a7152`)
-  for high readability.
-- **Wine-ring stains** are realistic — thin, irregular, *broken* rings with a
-  darker outer rim (the coffee-ring effect), NOT solid circles — placed subtly on
+**FIDELITY TARGET FOR THE PRODUCTION BUILD = PHOTOREAL ("all the way on fidelity").**
+The local prototype used stylized/procedural textures only because its offline
+numpy/PIL pipeline couldn't reach photoreal — that was a tooling limit, NOT the goal.
+In production, make it look genuinely real:
+- **The board (background) — GO PHOTOREAL:** a weathered dark **walnut charcuterie
+  board** as a *real photographic wood surface* — visible grain, knots, warmth and
+  depth, soft directional lighting and real soft shadows beneath the cards so it
+  feels tactile and premium, under a gentle candle vignette. Wood tones in the
+  `#1e130a`→`#4d3622` family.
+- **Cards = aged-parchment "wine label" slips** on a **real aged-paper texture**
+  (subtle fiber, grain, worn edges): cream `#f4e8cd`/`#ecdcb6`, edge `#cdb583`, with
+  a faint inner frame line like a real label. **Espresso-ink text**
+  (`#3a2a1c`/`#5f4630`/`#8a7152`) must stay crisp and fully legible over every texture.
+- **Wine-ring stains** must look like REAL stains left by a wine glass — thin,
+  irregular, *broken/incomplete* rings with a darker dried rim (coffee-ring effect)
+  and translucent centers, **never perfect thick/solid circles** — placed subtly on
   the board and hero.
-- **Generated assets** live in `assets/` (`parchment.jpg`, `stain1.png`,
-  `stain2.png`), made procedurally with numpy/PIL (generators in `tools/`) — **no
-  licensed stock photos**, fully offline-safe. Guiding principle: "photoreal or
-  close to it," but **tuned by eye** — stylized where that actually reads better.
+- **Assets:** use high-quality **photographic or photoreal-rendered** textures
+  (licensed stock or AI-generated imagery — whatever reaches photoreal). The
+  prototype's procedural `assets/` files (`parchment.jpg`, `stain1.png`,
+  `stain2.png`) are an offline-only stopgap, **not the fidelity target**. Keep all
+  visual treatment in the swappable skin layer; keep performance/PWA size sane.
 - **Text on the wood** (topbar, tab bar, wine name over the card) is warm **cream**
   (`#f0e1c2`/`#b89c72`).
 - **Accents:** bordeaux `#7a1f30`/`#9c2c43` and **brass** `#a9802f`/`#cda459`;
